@@ -4,87 +4,97 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Pax Wallet</title>
-    <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
         :root { --gold: #f1c40f; --bg: #0b0b0b; }
         body { background: var(--bg); color: white; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; }
-        .wallet { border: 1px solid var(--gold); padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; max-width: 400px; margin: 0 auto 20px; background: #1a1a1a; box-sizing: border-box; }
-        #balance { color: var(--gold); font-size: 1.2rem; }
-        .banana-hero { font-size: 100px; margin: 40px 0; cursor: pointer; filter: drop-shadow(0 0 10px var(--gold)); display: block; }
-        #reader { width: 100%; max-width: 400px; margin: auto; border-radius: 15px; overflow: hidden; }
-        .btn { width: 100%; max-width: 400px; padding: 18px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin: 10px auto; display: block; background: var(--gold); color: black; }
-        #res { display: none; }
+        
+        .wallet-card { 
+            border: 1px solid var(--gold); 
+            padding: 20px; 
+            border-radius: 15px; 
+            display: flex; 
+            justify-content: space-between; 
+            max-width: 350px; 
+            margin: 20px auto; 
+            background: #1a1a1a; 
+            box-sizing: border-box;
+        }
+        
+        #balance { color: var(--gold); font-size: 1.5rem; font-weight: bold; }
+        
+        .banana-display { 
+            font-size: 100px; 
+            margin: 40px 0; 
+            filter: drop-shadow(0 0 10px var(--gold)); 
+        }
+
+        .btn-claim { 
+            width: 100%; 
+            max-width: 350px; 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: none; 
+            font-size: 1.1rem;
+            font-weight: bold; 
+            cursor: pointer; 
+            background: var(--gold); 
+            color: black;
+        }
+
+        .btn-claim:disabled { opacity: 0.5; cursor: not-allowed; }
     </style>
 </head>
 <body>
 
-    <div class="wallet">
-        <span>PAX WALLET</span>
-        <b id="balance">0.00€</b>
+    <div class="wallet-card">
+        <span>MY BALANCE</span>
+        <span id="balance">0.00€</span>
     </div>
 
-    <div id="banana-area" class="banana-hero" onclick="run_scan()">🍌</div>
-    <div id="reader"></div>
+    <div class="banana-display">🍌</div>
 
-    <button class="btn" onclick="run_scan()">START SCANNER</button>
-    
-    <button class="btn" style="background: #222; color: #fff;" onclick="document.getElementById('file-input').click()">
-        📷 UPLOAD PHOTO
+    <button class="btn-claim" id="action-btn" onclick="addMoney()">
+        CLAIM 0.50€
     </button>
-    <input type="file" id="file-input" accept="image/*" style="display: none;" onchange="show_claim()">
 
-    <div id="res">
-        <button id="claim-btn" class="btn" onclick="save_data()" style="background: #2ecc71; color: white;">CLAIM 0.50€</button>
-    </div>
-
-    <script translate="no">
+    <script>
         const DB_URL = 'https://gxjcsauhdvdnpagezvbe.supabase.co';
         const DB_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4amNzdWhkdmRucGFnZXp2YmUiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczOTY1NTYyMSwiZXhwIjoyMDU1MjMxNjIxfQ.08E_p2yK4Y_I6G2fWw-B6G2M2Z2Z2Z2Z2Z2Z2Z2Z2Z2'; 
-        const _pax = supabase.createClient(DB_URL, DB_KEY);
+        const _supabase = supabase.createClient(DB_URL, DB_KEY);
 
-        async function update_balance() {
-            const { data } = await _pax.from('Histórico').select('valor');
+        async function refreshBalance() {
+            const { data } = await _supabase.from('Histórico').select('valor');
             if (data) {
-                let total = data.reduce((acc, item) => acc + parseFloat(item.valor || 0), 0);
+                const total = data.reduce((acc, curr) => acc + parseFloat(curr.valor || 0), 0);
                 document.getElementById('balance').innerText = total.toFixed(2) + "€";
             }
         }
 
-        window.onload = update_balance;
-
-        function run_scan() {
-            const scanner = new Html5Qrcode("reader");
-            document.getElementById('banana-area').style.display = 'none';
-            scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
-                (txt) => { show_claim(); scanner.stop(); }
-            ).catch(err => {
-                alert("Camera error. Use HTTPS.");
-                document.getElementById('banana-area').style.display = 'block';
-            });
-        }
-
-        function show_claim() {
-            document.getElementById('res').style.display = "block";
-            document.getElementById('banana-area').style.display = "none";
-        }
-
-        async function save_data() {
-            const btn = document.getElementById('claim-btn');
+        async function addMoney() {
+            const btn = document.getElementById('action-btn');
             btn.innerText = "SAVING...";
-            
-            const { error } = await _pax.from('Histórico').insert([{ nif: 'Audit', valor: 0.50 }]);
-            
+            btn.disabled = true;
+
+            const { error } = await _supabase
+                .from('Histórico')
+                .insert([{ nif: 'Manual_Claim', valor: 0.50 }]);
+
             if (error) {
                 alert("Error: " + error.message);
                 btn.innerText = "CLAIM 0.50€";
+                btn.disabled = false;
             } else {
-                alert("Success! +0.50€");
-                document.getElementById('res').style.display = "none";
-                document.getElementById('banana-area').style.display = "block";
-                update_balance();
+                await refreshBalance();
+                btn.innerText = "SUCCESS!";
+                setTimeout(() => {
+                    btn.innerText = "CLAIM 0.50€";
+                    btn.disabled = false;
+                }, 2000);
             }
         }
+
+        window.onload = refreshBalance;
     </script>
 </body>
 </html>
