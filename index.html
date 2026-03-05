@@ -7,14 +7,14 @@
     <script src="https://unpkg.com/html5-qrcode"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <style>
-        :root { --gold: #f1c40f; --bg: #0b0b0b; }
+        :root { --gold: #f1c40f; --bg: #0b0b0b; --grey: #1a1a1a; }
         body { background: var(--bg); color: white; font-family: sans-serif; text-align: center; padding: 20px; margin: 0; }
-        .wallet { border: 1px solid var(--gold); padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; max-width: 400px; margin: 0 auto 20px; background: #1a1a1a; }
+        .wallet { border: 1px solid var(--gold); padding: 20px; border-radius: 15px; display: flex; justify-content: space-between; max-width: 400px; margin: 0 auto 20px; background: var(--grey); box-sizing: border-box; }
         #balance { color: var(--gold); font-size: 1.2rem; }
         /* A BANANA */
-        .banana-hero { font-size: 100px; margin: 40px 0; cursor: pointer; filter: drop-shadow(0 0 10px var(--gold)); }
+        .banana-hero { font-size: 100px; margin: 30px 0; display: block; filter: drop-shadow(0 0 10px var(--gold)); cursor: pointer; }
         #reader { width: 100%; max-width: 400px; margin: auto; border-radius: 15px; overflow: hidden; }
-        .btn { width: 100%; max-width: 400px; padding: 18px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin: 10px auto; display: block; background: var(--gold); color: black; }
+        .btn { width: 100%; max-width: 400px; padding: 18px; border-radius: 12px; border: none; font-weight: bold; cursor: pointer; margin: 10px auto; display: block; background: var(--gold); color: black; text-decoration: none; }
         #res { display: none; }
     </style>
 </head>
@@ -61,7 +61,7 @@
             scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
                 (txt) => { show_claim(); scanner.stop(); }
             ).catch(err => {
-                alert("Use HTTPS e autorize a camera.");
+                alert("Erro: Autorize a camera ou use HTTPS.");
                 document.getElementById('banana-area').style.display = 'block';
             });
         }
@@ -72,7 +72,9 @@
         }
 
         async function save_data() {
-            const { error } = await _client.from('Histórico').insert([{ nif: 'Consumidor', valor: 0.50 }]);
+            // Inserção simplificada para evitar erro de fetch
+            const { error } = await _client.from('Histórico').insert([{ nif: 'Audit', valor: 0.50 }]);
+            
             if (error) {
                 alert("Erro: " + error.message);
             } else {
