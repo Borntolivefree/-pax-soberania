@@ -23,7 +23,7 @@
 
     <div class="wallet">
         <span style="font-size: 14px; color: #888;">MINHA CARTEIRA PAX</span>
-        <b style="color: var(--gold); font-size: 1.2rem;">2.00€</b>
+        <b id="total-balance" style="color: var(--gold); font-size: 1.2rem;">A carregar...</b>
     </div>
 
     <div id="banana-icon">🍌</div>
@@ -47,20 +47,39 @@
         <div id="list"></div>
     </div>
 
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
-     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-<script>
-  const SUPABASE_URL = 'https://gxjcsauhdvdnpagezvbe.supabase.co';
-  const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4amNzdWhkdmRucGFnZXp2YmUiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczOTY1NTYyMSwiZXhwIjoyMDU1MjMxNjIxfQ.08E_p2yK4Y_I6G2fWw-B6G2M2Z2Z2Z2Z2Z2Z2Z2Z2Z2'; 
-  const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    <script>
+        // Configuração do Supabase
+        const SUPABASE_URL = 'https://gxjcsauhdvdnpagezvbe.supabase.co';
+        const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4amNzdWhkdmRucGFnZXp2YmUiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczOTY1NTYyMSwiZXhwIjoyMDU1MjMxNjIxfQ.08E_p2yK4Y_I6G2fWw-B6G2M2Z2Z2Z2Z2Z2Z2Z2Z2Z2'; 
+        const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-  function startScanner() {
+        // Carregar Saldo e Histórico ao abrir a página
+        window.onload = loadData;
 
-function startScanner() { 
-       const scanner = new Html5Qrcode("reader");
+        async function loadData() {
+            const { data, error } = await _supabase.from('Histórico').select('*').order('created_at', { ascending: false });
+            if (data) {
+                let total = 0;
+                const list = document.getElementById('list');
+                list.innerHTML = "";
+                data.forEach(item => {
+                    total += parseFloat(item.valor);
+                    const div = document.createElement('div');
+                    div.className = 'h-item';
+                    div.innerHTML = `<span>Auditoria</span><b>+${item.valor.toFixed(2)}€</b>`;
+                    list.appendChild(div);
+                });
+                document.getElementById('total-balance').innerText = total.toFixed(2) + "€";
+            }
+        }
+
+        function startScanner() { 
+            const scanner = new Html5Qrcode("reader");
             scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
-            (txt) => { processData(txt); scanner.stop(); })
-            .catch(() => alert("Aceda via HTTPS para ligar a câmara."));
+                (txt) => { processData(txt); scanner.stop(); }
+            ).catch(() => alert("Aceda via HTTPS ou autorize a câmara."));
         }
 
         async function readImage(input) {
@@ -77,14 +96,19 @@ function startScanner() {
             document.getElementById('banana-icon').className = "glow-green";
         }
 
-        function confirmAudit() {
-            const list = document.getElementById('list');
-            const item = document.createElement('div');
-            item.className = 'h-item';
-            item.innerHTML = `<span>Auditoria Efetuada</span><b>+0.50€</b>`;
-            list.prepend(item);
-            document.getElementById('res').style.display = "none";
-            alert("Saldo adicionado à Carteira Pax!");
+        async function confirmAudit() {
+            // Envia para o Supabase
+            const { error } = await _supabase
+                .from('Histórico')
+                .insert([{ nif: '999999999', valor: 0.50 }]);
+
+            if (error) {
+                alert("Erro ao gravar no Supabase: " + error.message);
+            } else {
+                alert("Sucesso! 0.50€ adicionados à tua Carteira Pax.");
+                document.getElementById('res').style.display = "none";
+                loadData(); // Atualiza o saldo e a lista sem recarregar a página toda
+            }
         }
     </script>
 </body>
