@@ -23,7 +23,7 @@
 
     <div class="wallet">
         <span style="font-size: 14px; color: #888;">MINHA CARTEIRA PAX</span>
-        <b id="total-balance" style="color: var(--gold); font-size: 1.2rem;">A carregar...</b>
+        <b id="balance" style="color: var(--gold); font-size: 1.2rem;">A carregar...</b>
     </div>
 
     <div id="banana-icon">🍌</div>
@@ -48,18 +48,16 @@
     </div>
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
     <script>
-        // Configuração do Supabase
         const SUPABASE_URL = 'https://gxjcsauhdvdnpagezvbe.supabase.co';
         const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imd4amNzdWhkdmRucGFnZXp2YmUiLCJyb2xlIjoiYW5vbiIsImlhdCI6MTczOTY1NTYyMSwiZXhwIjoyMDU1MjMxNjIxfQ.08E_p2yK4Y_I6G2fWw-B6G2M2Z2Z2Z2Z2Z2Z2Z2Z2Z2'; 
         const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-        // Carregar Saldo e Histórico ao abrir a página
-        window.onload = loadData;
+        // Carregar dados ao abrir
+        window.onload = loadHistory;
 
-        async function loadData() {
-            const { data, error } = await _supabase.from('Histórico').select('*').order('created_at', { ascending: false });
+        async function loadHistory() {
+            const { data } = await _supabase.from('Histórico').select('*').order('created_at', { ascending: false });
             if (data) {
                 let total = 0;
                 const list = document.getElementById('list');
@@ -71,7 +69,7 @@
                     div.innerHTML = `<span>Auditoria</span><b>+${item.valor.toFixed(2)}€</b>`;
                     list.appendChild(div);
                 });
-                document.getElementById('total-balance').innerText = total.toFixed(2) + "€";
+                document.getElementById('balance').innerText = total.toFixed(2) + "€";
             }
         }
 
@@ -79,7 +77,7 @@
             const scanner = new Html5Qrcode("reader");
             scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, 
                 (txt) => { processData(txt); scanner.stop(); }
-            ).catch(() => alert("Aceda via HTTPS ou autorize a câmara."));
+            ).catch(() => alert("Use HTTPS para ligar a câmara."));
         }
 
         async function readImage(input) {
@@ -97,17 +95,13 @@
         }
 
         async function confirmAudit() {
-            // Envia para o Supabase
-            const { error } = await _supabase
-                .from('Histórico')
-                .insert([{ nif: '999999999', valor: 0.50 }]);
-
+            const { error } = await _supabase.from('Histórico').insert([{ nif: 'Consumidor', valor: 0.50 }]);
             if (error) {
-                alert("Erro ao gravar no Supabase: " + error.message);
+                alert("Erro: " + error.message);
             } else {
-                alert("Sucesso! 0.50€ adicionados à tua Carteira Pax.");
+                alert("Saldo de 0.50€ adicionado!");
                 document.getElementById('res').style.display = "none";
-                loadData(); // Atualiza o saldo e a lista sem recarregar a página toda
+                loadHistory(); 
             }
         }
     </script>
